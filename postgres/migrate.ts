@@ -1,32 +1,17 @@
 import postgres, { type PendingQuery, type Row } from "postgres";
 
-const sql = postgres({
-  port: 50111,
-  user: "postgres",
-  password: "example",
-});
-
-const steps = [
-  sql`create table if not exists dogs (
-    "name" text primary key,
-    "breed" text,
-    "good_dog" boolean
-  )`,
-  sql`create table if not exists cats (
-    "name" text primary key,
-    "breed" text,
-    "good_cat" boolean
-  )`,
-];
-
-async function migrate(steps: PendingQuery<Row[]>[]) {
-  await sql`
-  create table if not exists pmigrate (
-    raw text primary key,
-    file_name text,
-    ran_at timestamptz default now()
-  )
-  `;
+export async function migrate(sql: postgres.Sql, steps: PendingQuery<Row[]>[]) {
+  const [probe] =
+    await sql`SELECT to_regclass('public.pmigrate') IS NOT NULL AS exists;`;
+  if (!probe!.exists) {
+    await sql`
+    create table if not exists pmigrate (
+      raw text primary key,
+      file_name text,
+      ran_at timestamptz default now()
+    )
+    `;
+  }
 
   for (const step of steps) {
     const { string: raw } = await step.describe();
@@ -42,8 +27,3 @@ async function migrate(steps: PendingQuery<Row[]>[]) {
     }
   }
 }
-
-await sql`drop table if exists dogs`;
-await sql`drop table if exists cats`;
-await migrate(steps);
-await sql.end();

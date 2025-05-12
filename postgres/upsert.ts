@@ -1,5 +1,6 @@
 import type postgres from "postgres";
 
+// inspired by: https://github.com/porsager/postgres/issues/88#issuecomment-1162270739
 export async function pgUpsert(
   sql: postgres.Sql,
   table: string,
@@ -17,7 +18,7 @@ export async function pgUpsert(
   `;
 }
 
-export function omitUndefined(obj: Record<string, unknown>) {
+function omitUndefined(obj: Record<string, unknown>) {
   const entries = Object.entries(obj).filter(([, v]) => v !== undefined);
   return Object.fromEntries(entries);
 }
