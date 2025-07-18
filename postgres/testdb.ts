@@ -6,7 +6,7 @@ import postgres from "postgres";
 //       or maybe create test template db using some migrator,
 //       similar to pgtestdb
 export async function isolatedTestDb(
-  cb: (sql: postgres.Sql) => Promise<unknown>,
+  cb: (sql: postgres.Sql) => Promise<unknown>
 ) {
   const conn = {
     port: 50111,
@@ -19,9 +19,15 @@ export async function isolatedTestDb(
   console.log(dbName);
   await parent`CREATE DATABASE ${parent(dbName)}`;
 
-  const child = postgres({ ...conn, database: dbName });
-  await cb(child);
-  await child.end();
+  {
+    const { user, host, port, pass } = parent.options as any;
 
-  await parent`DROP DATABASE ${parent(dbName)}`;
+    // console.log("HI", user, host, port, pass);
+
+    const child = postgres({ user, host, port, pass, database: dbName });
+    await cb(child);
+    await child.end();
+
+    await parent`DROP DATABASE ${parent(dbName)}`;
+  }
 }
